@@ -32,7 +32,7 @@ jobs:
           root = pathlib.Path(".")
           tracked = subprocess.check_output(
               ["git", "ls-files", "-z"], text=True
-          ).split("\\0")
+          ).split("\0")
           tracked = [p for p in tracked if p]
           ignored = {".git", "node_modules", ".venv", "venv", "vendor", "dist", "build"}
           files = [
@@ -59,6 +59,8 @@ jobs:
               except Exception as exc:
                   problems.append(f"- Python `{path}`: {type(exc).__name__}: {exc}")
 
+          json_bad = any(x.startswith("- JSON ") for x in problems)
+          python_bad = any(x.startswith("- Python ") for x in problems)
           summary = [
               "# Automated maintenance status",
               "",
@@ -66,8 +68,8 @@ jobs:
               "",
               "## Checks",
               f"- Tracked files inspected: **{len(files)}**",
-              f"- JSON syntax: **{'PASS' if not any(x.startswith('- JSON ') for x in problems) else 'ATTENTION'}** ({len(json_files)} files)",
-              f"- Python syntax: **{'PASS' if not any(x.startswith('- Python ') for x in problems) else 'ATTENTION'}** ({len(python_files)} files)",
+              f"- JSON syntax: **{'ATTENTION' if json_bad else 'PASS'}** ({len(json_files)} files)",
+              f"- Python syntax: **{'ATTENTION' if python_bad else 'PASS'}** ({len(python_files)} files)",
               f"- Findings: **{len(problems)}**",
               "",
           ]
@@ -85,7 +87,7 @@ jobs:
 
           report = root / ".github" / "maintenance" / "status.md"
           report.parent.mkdir(parents=True, exist_ok=True)
-          report.write_text("\\n".join(summary), encoding="utf-8")
+          report.write_text("\n".join(summary), encoding="utf-8")
           PY
 
       - name: Commit report only when it changes
